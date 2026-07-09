@@ -60,7 +60,8 @@ const Bills = {
                             <div class="col-md-3">
                                 <label class="form-label">Điện cuối</label>
                                 <input type="number" class="form-control" value="${bill.electricEnd || ''}"
-                                    oninput="Bills.updateField('${room.id}', 'electricEnd', this.value)">
+                                    oninput="Bills.updateField('${room.id}', 'electricEnd', this.value)"
+                                    onblur="Bills.onElectricEndBlur('${room.id}', this.value)">
                                 <small class="text-muted" style="font-size:0.7rem">Tự điền điện đầu tháng sau</small>
                             </div>
                         </div>
@@ -157,13 +158,20 @@ const Bills = {
         bills[key][roomId][field] = numValue;
 
         this.calculateTotal(bills[key][roomId]);
-
-        if (field === 'electricEnd' && numValue > 0) {
-            this.autoFillNextMonth(roomId, numValue, month, year, bills);
-        }
-
         Storage.saveBills(bills);
         this.updateRealtime(roomId, bills[key][roomId]);
+    },
+
+    onElectricEndBlur(roomId, value) {
+        const month = parseInt(document.getElementById('selectMonth').value);
+        const year = parseInt(document.getElementById('selectYear').value);
+        const numValue = parseFloat(value) || 0;
+
+        if (numValue > 0) {
+            const bills = Storage.getBills();
+            this.autoFillNextMonth(roomId, numValue, month, year, bills);
+            Storage.saveBills(bills);
+        }
     },
 
     autoFillNextMonth(roomId, electricEnd, currentMonth, currentYear, bills) {
@@ -274,6 +282,8 @@ const Bills = {
         const selectedYear = parseInt(document.getElementById('selectYear').value);
 
         const months = [];
+        let hasCurrentMonth = false;
+
         for (let i = 11; i >= 0; i--) {
             let m = currentMonth - i;
             let y = currentYear;
@@ -281,18 +291,28 @@ const Bills = {
 
             const key = Utils.getKey(m, y);
             const monthBills = bills[key] || {};
+
+            let hasData = false;
             let totalRevenue = 0;
             let paidCount = 0;
             let totalCount = 0;
 
             rooms.forEach(room => {
                 const bill = monthBills[room.id];
-                if (bill && bill.total) {
-                    totalRevenue += bill.total;
-                    totalCount++;
-                    if (bill.paid) paidCount++;
+                if (bill && (bill.electricStart || bill.electricEnd || bill.roomFee || bill.waterM3 || bill.total)) {
+                    hasData = true;
+                    if (bill.total) {
+                        totalRevenue += bill.total;
+                        totalCount++;
+                        if (bill.paid) paidCount++;
+                    }
                 }
             });
+
+            const isCurrent = m === currentMonth && y === currentYear;
+            if (isCurrent) hasCurrentMonth = true;
+
+            if (!hasData && !isCurrent) continue;
 
             months.push({
                 month: m,
@@ -308,6 +328,11 @@ const Bills = {
         const container = document.getElementById('monthList');
         if (!container) return;
 
+        if (months.length === 0) {
+            container.innerHTML = `<div class="text-center text-muted py-3" style="font-size:0.85rem">Chưa có dữ liệu</div>`;
+            return;
+        }
+
         container.innerHTML = months.map(m => `
             <div class="month-item ${m.isSelected ? 'active' : ''}" onclick="App.selectMonth(${m.month}, ${m.year})">
                 <div class="month-item-header">
@@ -316,7 +341,7 @@ const Bills = {
                 </div>
                 <div class="month-item-body">
                     <span class="month-revenue">${m.totalRevenue > 0 ? Utils.formatCurrency(m.totalRevenue) : '-'}</span>
-                    <span class="month-status ${m.paidCount === m.totalCount && m.totalCount > 0 ? 'all-paid' : ''}">
+                    <span class="month-status ${m.totalCount > 0 && m.paidCount === m.totalCount ? 'all-paid' : ''}">
                         ${m.totalCount > 0 ? `${m.paidCount}/${m.totalCount}` : '-'}
                     </span>
                 </div>
