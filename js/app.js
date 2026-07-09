@@ -88,6 +88,12 @@ const App = {
                 Settings.render();
                 break;
         }
+    },
+
+    selectMonth(month, year) {
+        document.getElementById('selectMonth').value = month;
+        document.getElementById('selectYear').value = year;
+        this.refreshCurrentPage();
     }
 };
 

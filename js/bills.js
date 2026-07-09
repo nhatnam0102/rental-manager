@@ -46,7 +46,7 @@ const Bills = {
                     </div>
                     <div class="bill-card-body ${isOpen ? 'show' : ''}" id="bill-body-${room.id}">
                         <div class="section-title">Tiền Phòng & Điện</div>
-                        <div class="row g-3 mb-4">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Tiền phòng (đ)</label>
                                 <input type="number" class="form-control" value="${bill.roomFee || ''}"
@@ -63,15 +63,15 @@ const Bills = {
                                     oninput="Bills.updateField('${room.id}', 'electricEnd', this.value)">
                             </div>
                         </div>
-                        ${bill.electricKwh ? `<div class="text-muted mb-3" style="font-size:0.85rem">${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}</div>` : ''}
+                        <div class="electric-info text-muted mb-3" style="font-size:0.85rem;${bill.electricKwh ? '' : 'display:none'}">${bill.electricKwh ? `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}` : ''}</div>
 
                         <div class="section-title">Nước, WiFi, Rác</div>
-                        <div class="row g-3 mb-4">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-4">
                                 <label class="form-label">Nước (m³)</label>
                                 <input type="number" class="form-control" value="${bill.waterM3 || ''}"
                                     oninput="Bills.updateField('${room.id}', 'waterM3', this.value)" placeholder="0">
-                                ${bill.waterTotal ? `<small class="text-muted">= ${Utils.formatCurrency(bill.waterTotal)}</small>` : ''}
+                                <small class="water-info text-muted"${bill.waterTotal ? '' : ' style="display:none"'}>${bill.waterTotal ? `= ${Utils.formatCurrency(bill.waterTotal)}` : ''}</small>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">WiFi (đ)</label>
@@ -110,7 +110,7 @@ const Bills = {
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center pt-3" style="border-top: 1px solid var(--border)">
-                            <h5 class="mb-0" style="color: var(--primary)">Tổng: <strong>${Utils.formatCurrency(total)}</strong></h5>
+                            <h5 class="mb-0" style="color: var(--primary)">Tổng: <strong class="bill-total">${Utils.formatCurrency(total)}</strong></h5>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-secondary" onclick="Bills.printBill('${room.id}')">
                                     <i class="bi bi-printer"></i> In
@@ -124,6 +124,8 @@ const Bills = {
                     </div>
                 </div>`;
         }).join('');
+
+        this.renderMonthList();
     },
 
     toggle(roomId) {
@@ -154,23 +156,30 @@ const Bills = {
         bills[key][roomId][field] = numValue;
 
         this.calculateTotal(bills[key][roomId]);
+
+        if (field === 'electricEnd' && numValue > 0) {
+            this.autoFillNextMonth(roomId, numValue, month, year, bills);
+        }
+
         Storage.saveBills(bills);
+        this.updateRealtime(roomId, bills[key][roomId]);
+    },
 
-        const bill = bills[key][roomId];
-        const totalEl = document.querySelector(`#bill-body-${roomId}`)?.closest('.bill-card')?.querySelector('.bill-amount');
-        if (totalEl && bill.total) {
-            totalEl.textContent = Utils.formatCurrency(bill.total);
+    autoFillNextMonth(roomId, electricEnd, currentMonth, currentYear, bills) {
+        let nextMonth = currentMonth + 1;
+        let nextYear = currentYear;
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
         }
 
-        const settings = Storage.getSettings();
-        const electricInfo = document.querySelector(`#bill-body-${roomId}`)?.querySelector('.text-muted');
-        if (bill.electricKwh && electricInfo) {
-            electricInfo.textContent = `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}`;
-        }
+        const nextKey = Utils.getKey(nextMonth, nextYear);
+        if (!bills[nextKey]) bills[nextKey] = {};
+        if (!bills[nextKey][roomId]) bills[nextKey][roomId] = {};
 
-        const totalDisplay = document.querySelector(`#bill-body-${roomId}`)?.querySelector('h5 strong');
-        if (totalDisplay) {
-            totalDisplay.textContent = Utils.formatCurrency(bill.total);
+        const nextBill = bills[nextKey][roomId];
+        if (!nextBill.electricStart || nextBill.electricStart === 0) {
+            nextBill.electricStart = electricEnd;
         }
     },
 
@@ -199,6 +208,102 @@ const Bills = {
         total += parseFloat(bill.other) || 0;
 
         bill.total = total;
+    },
+
+    updateRealtime(roomId, bill) {
+        const settings = Storage.getSettings();
+        const card = document.querySelector(`#bill-body-${roomId}`)?.closest('.bill-card');
+        if (!card) return;
+
+        const amountEl = card.querySelector('.bill-amount');
+        if (amountEl && bill.total) {
+            amountEl.textContent = Utils.formatCurrency(bill.total);
+        }
+
+        const kwInfo = card.querySelector('.electric-info');
+        if (kwInfo) {
+            if (bill.electricKwh) {
+                kwInfo.textContent = `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}`;
+                kwInfo.style.display = '';
+            } else {
+                kwInfo.style.display = 'none';
+            }
+        }
+
+        const waterInfo = card.querySelector('.water-info');
+        if (waterInfo) {
+            if (bill.waterTotal) {
+                waterInfo.textContent = `= ${Utils.formatCurrency(bill.waterTotal)}`;
+                waterInfo.style.display = '';
+            } else {
+                waterInfo.style.display = 'none';
+            }
+        }
+
+        const totalEl = card.querySelector('.bill-total');
+        if (totalEl) {
+            totalEl.textContent = Utils.formatCurrency(bill.total);
+        }
+    },
+
+    renderMonthList() {
+        const bills = Storage.getBills();
+        const rooms = Storage.getRooms();
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        const selectedMonth = parseInt(document.getElementById('selectMonth').value);
+        const selectedYear = parseInt(document.getElementById('selectYear').value);
+
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+            let m = currentMonth - i;
+            let y = currentYear;
+            while (m <= 0) { m += 12; y--; }
+
+            const key = Utils.getKey(m, y);
+            const monthBills = bills[key] || {};
+            let totalRevenue = 0;
+            let paidCount = 0;
+            let totalCount = 0;
+
+            rooms.forEach(room => {
+                const bill = monthBills[room.id];
+                if (bill && bill.total) {
+                    totalRevenue += bill.total;
+                    totalCount++;
+                    if (bill.paid) paidCount++;
+                }
+            });
+
+            months.push({
+                month: m,
+                year: y,
+                key,
+                totalRevenue,
+                paidCount,
+                totalCount,
+                isSelected: m === selectedMonth && y === selectedYear
+            });
+        }
+
+        const container = document.getElementById('monthList');
+        if (!container) return;
+
+        container.innerHTML = months.map(m => `
+            <div class="month-item ${m.isSelected ? 'active' : ''}" onclick="App.selectMonth(${m.month}, ${m.year})">
+                <div class="month-item-header">
+                    <span class="month-name">${Utils.getMonthName(m.month)}</span>
+                    <span class="month-year">${m.year}</span>
+                </div>
+                <div class="month-item-body">
+                    <span class="month-revenue">${m.totalRevenue > 0 ? Utils.formatCurrency(m.totalRevenue) : '-'}</span>
+                    <span class="month-status ${m.paidCount === m.totalCount && m.totalCount > 0 ? 'all-paid' : ''}">
+                        ${m.totalCount > 0 ? `${m.paidCount}/${m.totalCount}` : '-'}
+                    </span>
+                </div>
+            </div>
+        `).join('');
     },
 
     togglePaid(roomId) {

@@ -787,3 +787,82 @@ body {
         margin-left: 0 !important;
     }
 }
+
+/* Month List */
+.month-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.month-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+}
+
+.month-item:hover {
+    background: var(--bg);
+}
+
+.month-item.active {
+    background: rgba(99,102,241,0.08);
+    border-color: var(--primary);
+}
+
+.month-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.month-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.month-item.active .month-name {
+    color: var(--primary);
+}
+
+.month-year {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.month-item-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.month-revenue {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.month-status {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-muted);
+}
+
+.month-status.all-paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Auto-fill hint */
+.auto-fill-hint {
+    font-size: 0.75rem;
+    color: var(--info);
+    font-style: italic;
+    margin-top: 4px;
+}
