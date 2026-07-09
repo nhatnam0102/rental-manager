@@ -61,6 +61,7 @@ const Bills = {
                                 <label class="form-label">Điện cuối</label>
                                 <input type="number" class="form-control" value="${bill.electricEnd || ''}"
                                     oninput="Bills.updateField('${room.id}', 'electricEnd', this.value)">
+                                <small class="text-muted" style="font-size:0.7rem">Tự điền điện đầu tháng sau</small>
                             </div>
                         </div>
                         <div class="electric-info text-muted mb-3" style="font-size:0.85rem;${bill.electricKwh ? '' : 'display:none'}">${bill.electricKwh ? `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}` : ''}</div>
@@ -180,7 +181,24 @@ const Bills = {
         const nextBill = bills[nextKey][roomId];
         if (!nextBill.electricStart || nextBill.electricStart === 0) {
             nextBill.electricStart = electricEnd;
+            this.showToast(`Tự điền điện đầu ${Utils.getMonthName(nextMonth)} ${nextYear}: ${Utils.formatNumber(electricEnd)}`);
         }
+    },
+
+    showToast(message) {
+        const existing = document.querySelector('.toast-msg');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${message}`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     },
 
     calculateTotal(bill) {
