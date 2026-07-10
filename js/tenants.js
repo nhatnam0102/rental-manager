@@ -2,38 +2,104 @@ const Tenants = {
     render() {
         const tenants = Storage.getTenants();
         const rooms = Storage.getRooms();
-        const tbody = document.getElementById('tenantsList');
+        const container = document.getElementById('tenantsList');
 
         if (tenants.length === 0) {
-            tbody.innerHTML = `
-                <tr><td colspan="6">
-                    <div class="empty-state">
-                        <div class="empty-icon"><i class="bi bi-people"></i></div>
-                        <p>Chưa có khách thuê nào</p>
-                    </div>
-                </td></tr>`;
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-people"></i></div>
+                    <p>Chưa có khách thuê nào</p>
+                </div>`;
             return;
         }
 
-        tbody.innerHTML = tenants.map(tenant => {
-            const room = rooms.find(r => r.id === tenant.roomId);
-            return `
-                <tr>
-                    <td><strong>${tenant.name}</strong></td>
-                    <td>${tenant.phone}</td>
-                    <td>${tenant.cccd || '-'}</td>
-                    <td>${room ? room.name : '<span class="text-muted">Chưa gán</span>'}</td>
-                    <td>${tenant.moveInDate || '-'}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="Tenants.showEdit('${tenant.id}')">
-                            <i class="bi bi-pencil"></i>
+        const grouped = {};
+        rooms.forEach(room => {
+            const roomTenants = tenants.filter(t => t.roomId === room.id);
+            if (roomTenants.length > 0) {
+                grouped[room.id] = { room, tenants: roomTenants };
+            }
+        });
+
+        const unassigned = tenants.filter(t => !t.roomId);
+
+        let html = '';
+
+        Object.values(grouped).forEach(({ room, tenants: roomTenants }) => {
+            html += `
+                <div class="tenant-group">
+                    <div class="tenant-group-header">
+                        <div class="tenant-group-room">
+                            <div class="room-card-icon" style="width:32px;height:32px;font-size:0.75rem">${room.name.substring(0, 3)}</div>
+                            <span class="tenant-group-name">${room.name}</span>
+                            <span class="badge badge-occupied" style="font-size:0.7rem">${roomTenants.length} người</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showAddToRoom('${room.id}')">
+                            <i class="bi bi-plus-lg"></i> Thêm
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="Tenants.delete('${tenant.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-        }).join('');
+                    </div>
+                    <div class="tenant-group-body">
+                        ${roomTenants.map(t => `
+                            <div class="tenant-item">
+                                <div class="tenant-avatar">${t.name.charAt(0).toUpperCase()}</div>
+                                <div class="tenant-info">
+                                    <div class="tenant-name">${t.name}</div>
+                                    <div class="tenant-meta">
+                                        <span><i class="bi bi-telephone"></i> ${t.phone}</span>
+                                        ${t.cccd ? `<span><i class="bi bi-card-heading"></i> ${t.cccd}</span>` : ''}
+                                        ${t.moveInDate ? `<span><i class="bi bi-calendar"></i> ${t.moveInDate}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="tenant-actions">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showEdit('${t.id}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="Tenants.delete('${t.id}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        });
+
+        if (unassigned.length > 0) {
+            html += `
+                <div class="tenant-group">
+                    <div class="tenant-group-header">
+                        <div class="tenant-group-room">
+                            <i class="bi bi-person-x" style="font-size:1.1rem;color:var(--text-muted)"></i>
+                            <span class="tenant-group-name">Chưa gán phòng</span>
+                            <span class="badge badge-available" style="font-size:0.7rem">${unassigned.length} người</span>
+                        </div>
+                    </div>
+                    <div class="tenant-group-body">
+                        ${unassigned.map(t => `
+                            <div class="tenant-item">
+                                <div class="tenant-avatar" style="background:#fee2e2;color:#dc2626">${t.name.charAt(0).toUpperCase()}</div>
+                                <div class="tenant-info">
+                                    <div class="tenant-name">${t.name}</div>
+                                    <div class="tenant-meta">
+                                        <span><i class="bi bi-telephone"></i> ${t.phone}</span>
+                                        ${t.cccd ? `<span><i class="bi bi-card-heading"></i> ${t.cccd}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="tenant-actions">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showEdit('${t.id}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="Tenants.delete('${t.id}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
+        container.innerHTML = html;
     },
 
     getRoomOptions(selectedId) {
@@ -68,6 +134,35 @@ const Tenants = {
             <div class="mb-3">
                 <label class="form-label">Phòng</label>
                 <select class="form-select" id="tenantRoom">${this.getRoomOptions()}</select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Ngày Vào</label>
+                <input type="date" class="form-control" id="tenantMoveIn" value="${Utils.today()}">
+            </div>`;
+
+        document.getElementById('modalSave').onclick = () => this.save();
+        new bootstrap.Modal(document.getElementById('mainModal')).show();
+    },
+
+    showAddToRoom(roomId) {
+        const room = Storage.getRooms().find(r => r.id === roomId);
+        document.getElementById('modalTitle').textContent = `Thêm Khách Vào ${room ? room.name : ''}`;
+        document.getElementById('modalBody').innerHTML = `
+            <div class="mb-3">
+                <label class="form-label">Họ Tên</label>
+                <input type="text" class="form-control" id="tenantName">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Số Điện Thoại</label>
+                <input type="tel" class="form-control" id="tenantPhone">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">CCCD</label>
+                <input type="text" class="form-control" id="tenantCCCD">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phòng</label>
+                <select class="form-select" id="tenantRoom">${this.getRoomOptions(roomId)}</select>
             </div>
             <div class="mb-3">
                 <label class="form-label">Ngày Vào</label>

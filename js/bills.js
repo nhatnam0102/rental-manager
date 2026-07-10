@@ -45,13 +45,17 @@ const Bills = {
                         </div>
                     </div>
                     <div class="bill-card-body ${isOpen ? 'show' : ''}" id="bill-body-${room.id}">
-                        <div class="section-title">Tiền Phòng & Điện</div>
+                        <div class="section-title">Tiền Phòng</div>
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="form-label">Tiền phòng (đ)</label>
                                 <input type="number" class="form-control" value="${bill.roomFee || ''}"
                                     oninput="Bills.updateField('${room.id}', 'roomFee', this.value)" placeholder="0">
                             </div>
+                        </div>
+
+                        <div class="section-title">Điện</div>
+                        <div class="row g-3 mb-3">
                             <div class="col-md-3">
                                 <label class="form-label">Điện đầu</label>
                                 <input type="number" class="form-control" value="${bill.electricStart || ''}"
@@ -64,8 +68,17 @@ const Bills = {
                                     onblur="Bills.onElectricEndBlur('${room.id}', this.value)">
                                 <small class="text-muted" style="font-size:0.7rem">Tự điền điện đầu tháng sau</small>
                             </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tiêu thụ</label>
+                                <input type="text" class="form-control" value="${bill.electricKwh || '0'}" readonly
+                                    style="background:#f1f5f9; font-weight:600">
+                                <small class="text-muted" style="font-size:0.7rem">kWh (cuối - đầu)</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Thành tiền</label>
+                                <div class="electric-info" style="padding:6px 0;font-weight:600;color:var(--primary)">${bill.electricTotal ? Utils.formatCurrency(bill.electricTotal) : '0 đ'}</div>
+                            </div>
                         </div>
-                        <div class="electric-info text-muted mb-3" style="font-size:0.85rem;${bill.electricKwh ? '' : 'display:none'}">${bill.electricKwh ? `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}` : ''}</div>
 
                         <div class="section-title">Nước</div>
                         <div class="row g-3 mb-3">
@@ -314,14 +327,13 @@ const Bills = {
             amountEl.textContent = Utils.formatCurrency(bill.total);
         }
 
-        const kwInfo = card.querySelector('.electric-info');
-        if (kwInfo) {
-            if (bill.electricKwh) {
-                kwInfo.textContent = `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}`;
-                kwInfo.style.display = '';
-            } else {
-                kwInfo.style.display = 'none';
-            }
+        const electricKwhInput = card.querySelector('.electric-info')?.closest('.row')?.querySelector('input[readonly]');
+        const electricInfo = card.querySelector('.electric-info');
+        if (electricKwhInput && bill.electricKwh !== undefined) {
+            electricKwhInput.value = bill.electricKwh;
+        }
+        if (electricInfo) {
+            electricInfo.textContent = bill.electricTotal ? Utils.formatCurrency(bill.electricTotal) : '0 đ';
         }
 
         const waterInfo = card.querySelector('.water-info');
@@ -329,7 +341,7 @@ const Bills = {
             waterInfo.textContent = bill.waterTotal ? Utils.formatCurrency(bill.waterTotal) : '0 đ';
         }
 
-        const waterM3Input = card.querySelector('input[readonly]');
+        const waterM3Input = card.querySelectorAll('input[readonly]')[1];
         if (waterM3Input && bill.waterM3 !== undefined) {
             waterM3Input.value = bill.waterM3;
         }
@@ -481,9 +493,14 @@ const Bills = {
                 <h2>HÓA ĐƠN TIỀN PHÒNG</h2>
                 <h4>${roomName} - ${Utils.getMonthName(month)} ${year}</h4>
                 <div class="section">
-                    <div class="section-title">Phòng & Điện</div>
+                    <div class="section-title">Tiền Phòng</div>
                     <div class="row"><span>Tiền phòng:</span><span>${Utils.formatCurrency(bill.roomFee || 0)}</span></div>
-                    <div class="row"><span>Điện (${bill.electricKwh || 0} kWh × ${Utils.formatNumber(settings.electricPrice)}):</span><span>${Utils.formatCurrency(bill.electricTotal || 0)}</span></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">Điện</div>
+                    <div class="row"><span>Số đầu:</span><span>${bill.electricStart || 0}</span></div>
+                    <div class="row"><span>Số cuối:</span><span>${bill.electricEnd || 0}</span></div>
+                    <div class="row"><span>Tiêu thụ (${bill.electricKwh || 0} kWh × ${Utils.formatNumber(settings.electricPrice)}):</span><span>${Utils.formatCurrency(bill.electricTotal || 0)}</span></div>
                 </div>
                 <div class="section">
                     <div class="section-title">Nước</div>

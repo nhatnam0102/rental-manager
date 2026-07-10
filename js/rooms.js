@@ -2,43 +2,66 @@ const Rooms = {
     render() {
         const rooms = Storage.getRooms();
         const tenants = Storage.getTenants();
-        const tbody = document.getElementById('roomsList');
+        const container = document.getElementById('roomsList');
 
         if (rooms.length === 0) {
-            tbody.innerHTML = `
-                <tr><td colspan="5">
-                    <div class="empty-state">
-                        <div class="empty-icon"><i class="bi bi-door-open"></i></div>
-                        <p>Chưa có phòng nào</p>
-                    </div>
-                </td></tr>`;
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-door-open"></i></div>
+                    <p>Chưa có phòng nào</p>
+                </div>`;
             return;
         }
 
-        tbody.innerHTML = rooms.map(room => {
+        container.innerHTML = rooms.map(room => {
             const roomTenants = tenants.filter(t => t.roomId === room.id);
             const count = roomTenants.length;
-            const tenantNames = roomTenants.map(t => t.name).join(', ');
-            const phones = roomTenants.map(t => t.phone).join(', ');
+
+            const tenantListHTML = count > 0
+                ? roomTenants.map(t => `
+                    <div class="room-tenant-item">
+                        <div class="room-tenant-avatar">${t.name.charAt(0).toUpperCase()}</div>
+                        <div class="room-tenant-info">
+                            <div class="room-tenant-name">${t.name}</div>
+                            <div class="room-tenant-phone">${t.phone}</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="Tenants.delete('${t.id}')" title="Xóa">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>`).join('')
+                : '<div class="room-empty-tenants">Chưa có khách thuê</div>';
+
             return `
-                <tr>
-                    <td><strong>${room.name}</strong></td>
-                    <td>${count > 0 ? `${tenantNames} <span class="text-muted" style="font-size:0.8rem">(${count} người)</span>` : '<span class="text-muted">Trống</span>'}</td>
-                    <td>${count > 0 ? phones : '-'}</td>
-                    <td>
+                <div class="room-card">
+                    <div class="room-card-header">
+                        <div class="room-card-title">
+                            <div class="room-card-icon">${room.name.substring(0, 3)}</div>
+                            <div>
+                                <div class="room-card-name">${room.name}</div>
+                                ${room.note ? `<div class="room-card-note">${room.note}</div>` : ''}
+                            </div>
+                        </div>
                         <span class="badge ${count > 0 ? 'badge-occupied' : 'badge-available'}">
                             ${count > 0 ? `${count} người` : 'Trống'}
                         </span>
-                    </td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="Rooms.showEdit('${room.id}')">
-                            <i class="bi bi-pencil"></i>
+                    </div>
+                    <div class="room-card-body">
+                        ${tenantListHTML}
+                    </div>
+                    <div class="room-card-footer">
+                        <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showAddToRoom('${room.id}')">
+                            <i class="bi bi-person-plus"></i> Thêm khách
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="Rooms.delete('${room.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
+                        <div class="room-card-actions">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="Rooms.showEdit('${room.id}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="Rooms.delete('${room.id}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
         }).join('');
     },
 
