@@ -70,59 +70,63 @@
                     <div class="page-header">
                         <h4>Tổng Quan</h4>
                     </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3 col-6">
-                            <div class="card stat-card bg-primary text-white">
-                                <div class="card-body">
-                                    <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
-                                    <h6>Tổng Doanh Thu</h6>
-                                    <h3 id="stat-revenue">0 đ</h3>
-                                </div>
+
+                    <div class="dash-stats">
+                        <div class="dash-stat-card" style="border-left-color: var(--primary)">
+                            <div class="dash-stat-icon" style="background: var(--primary-bg); color: var(--primary)">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <div class="dash-stat-body">
+                                <span class="dash-stat-label">Doanh Thu</span>
+                                <span class="dash-stat-value" id="stat-revenue">0đ</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6">
-                            <div class="card stat-card bg-success text-white">
-                                <div class="card-body">
-                                    <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                                    <h6>Đã Đóng</h6>
-                                    <h3 id="stat-paid">0 phòng</h3>
-                                </div>
+                        <div class="dash-stat-card" style="border-left-color: var(--success)">
+                            <div class="dash-stat-icon" style="background: var(--success-bg); color: var(--success)">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div class="dash-stat-body">
+                                <span class="dash-stat-label">Đã Đóng</span>
+                                <span class="dash-stat-value" id="stat-paid">0</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6">
-                            <div class="card stat-card bg-danger text-white">
-                                <div class="card-body">
-                                    <div class="stat-icon"><i class="bi bi-exclamation-circle"></i></div>
-                                    <h6>Chưa Đóng</h6>
-                                    <h3 id="stat-unpaid">0 phòng</h3>
-                                </div>
+                        <div class="dash-stat-card" style="border-left-color: var(--danger)">
+                            <div class="dash-stat-icon" style="background: var(--danger-bg); color: var(--danger)">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div class="dash-stat-body">
+                                <span class="dash-stat-label">Chưa Đóng</span>
+                                <span class="dash-stat-value" id="stat-unpaid">0</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6">
-                            <div class="card stat-card bg-info text-white">
-                                <div class="card-body">
-                                    <div class="stat-icon"><i class="bi bi-building"></i></div>
-                                    <h6>Tổng Phòng</h6>
-                                    <h3 id="stat-total">0 phòng</h3>
-                                </div>
+                        <div class="dash-stat-card" style="border-left-color: var(--info)">
+                            <div class="dash-stat-icon" style="background: rgba(6,182,212,0.1); color: var(--info)">
+                                <i class="bi bi-door-open"></i>
+                            </div>
+                            <div class="dash-stat-body">
+                                <span class="dash-stat-label">Tổng Phòng</span>
+                                <span class="dash-stat-value" id="stat-total">0</span>
                             </div>
                         </div>
                     </div>
-                    <div class="row g-3">
-                        <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">Doanh Thu 6 Tháng Gần Nhất</div>
-                                <div class="card-body">
-                                    <canvas id="revenueChart" height="300"></canvas>
-                                </div>
+
+                    <div class="dash-grid">
+                        <div class="dash-chart-card">
+                            <div class="dash-card-header">
+                                <h5>Doanh Thu</h5>
+                                <span class="dash-card-subtitle">6 tháng gần nhất</span>
+                            </div>
+                            <div class="dash-card-body">
+                                <canvas id="revenueChart" height="260"></canvas>
                             </div>
                         </div>
-                        <div class="col-lg-4">
-                            <div class="card">
-                                <div class="card-header">Chưa Đóng Tiền</div>
-                                <div class="card-body">
-                                    <div id="unpaidList"></div>
-                                </div>
+                        <div class="dash-unpaid-card">
+                            <div class="dash-card-header">
+                                <h5>Chưa Đóng Tiền</h5>
+                                <span class="dash-unpaid-count" id="unpaidCount">0</span>
+                            </div>
+                            <div class="dash-card-body dash-unpaid-body">
+                                <div id="unpaidList"></div>
                             </div>
                         </div>
                     </div>

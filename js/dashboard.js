@@ -31,6 +31,12 @@ const Dashboard = {
         document.getElementById('stat-unpaid').textContent = `${unpaidCount} phòng`;
         document.getElementById('stat-total').textContent = `${rooms.length} phòng`;
 
+        const unpaidBadge = document.getElementById('unpaidCount');
+        if (unpaidBadge) {
+            unpaidBadge.textContent = unpaidCount;
+            unpaidBadge.style.display = unpaidCount > 0 ? '' : 'none';
+        }
+
         this.renderUnpaidList(monthBills, rooms);
         this.renderChart(bills, year, month);
     },
@@ -45,25 +51,28 @@ const Dashboard = {
 
         if (unpaidRooms.length === 0) {
             container.innerHTML = `
-                <div class="empty-state py-3">
-                    <div class="empty-icon" style="background:#d1fae5;color:#065f46;width:48px;height:48px;font-size:1.2rem"><i class="bi bi-check-circle"></i></div>
-                    <p class="mb-0 mt-2">Tất cả đã đóng tiền</p>
+                <div class="dash-unpaid-empty">
+                    <div class="dash-unpaid-empty-icon">
+                        <i class="bi bi-check2-all"></i>
+                    </div>
+                    <p>Tất cả đã đóng tiền</p>
                 </div>`;
             return;
         }
 
         container.innerHTML = unpaidRooms.map(room => {
             const bill = monthBills[room.id];
+            const tenantCount = Tenants.getTenantCount(room.id);
             return `
-                <div class="unpaid-item">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="room-badge">${room.name.substring(0, 3)}</div>
-                        <div>
-                            <strong style="font-size:0.9rem">${room.name}</strong>
-                            <div style="font-size:0.8rem;color:var(--text-muted)">${Utils.formatCurrency(bill.total)}</div>
+                <div class="dash-unpaid-item">
+                    <div class="dash-unpaid-left">
+                        <div class="dash-unpaid-icon">${room.name.substring(0, 2)}</div>
+                        <div class="dash-unpaid-info">
+                            <span class="dash-unpaid-name">${room.name}</span>
+                            <span class="dash-unpaid-detail">${Utils.formatCurrency(bill.total)}${tenantCount > 0 ? ` · ${tenantCount} người` : ''}</span>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-success" onclick="Bills.togglePaid('${room.id}'); Dashboard.render();">
+                    <button class="btn btn-sm btn-outline-success" onclick="Bills.togglePaid('${room.id}'); Dashboard.render();" title="Đánh dấu đã đóng">
                         <i class="bi bi-check-lg"></i>
                     </button>
                 </div>`;
@@ -79,7 +88,7 @@ const Dashboard = {
             let y = currentYear;
             while (m <= 0) { m += 12; y--; }
 
-            labels.push(`${Utils.getMonthName(m)} ${y}`);
+            labels.push(`Th${m}`);
 
             const key = Utils.getKey(m, y);
             const monthBills = bills[key] || {};
@@ -90,41 +99,84 @@ const Dashboard = {
             data.push(total);
         }
 
-        const ctx = document.getElementById('revenueChart').getContext('2d');
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
 
         if (this.chart) {
             this.chart.destroy();
         }
 
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+        gradient.addColorStop(0, 'rgba(79, 110, 247, 0.25)');
+        gradient.addColorStop(1, 'rgba(79, 110, 247, 0.01)');
+
         this.chart = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels,
                 datasets: [{
-                    label: 'Doanh thu (đ)',
+                    label: 'Doanh thu',
                     data,
-                    backgroundColor: 'rgba(99, 102, 241, 0.7)',
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    borderWidth: 1,
-                    borderRadius: 6
+                    borderColor: '#4f6ef7',
+                    borderWidth: 2.5,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#4f6ef7',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 3,
+                    pointHoverBackgroundColor: '#4f6ef7',
+                    pointHoverBorderColor: '#fff'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: '#1a1f36',
+                        titleFont: { size: 12, weight: '500' },
+                        bodyFont: { size: 13, weight: '600' },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
                         callbacks: {
                             label: (ctx) => Utils.formatCurrency(ctx.raw)
                         }
                     }
                 },
                 scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            font: { size: 11, weight: '500' },
+                            color: '#9098ad'
+                        }
+                    },
                     y: {
                         beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.04)',
+                            drawBorder: false
+                        },
+                        border: { display: false },
                         ticks: {
-                            callback: (value) => Utils.formatCurrency(value)
+                            font: { size: 11 },
+                            color: '#9098ad',
+                            callback: (value) => {
+                                if (value >= 1000000) return (value / 1000000).toFixed(0) + 'tr';
+                                if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                                return value;
+                            }
                         }
                     }
                 }
