@@ -567,7 +567,7 @@ body {
 /* ========== ROOM CARDS ========== */
 .room-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 12px;
 }
 
@@ -931,92 +931,30 @@ body {
 }
 
 /* ========== RESPONSIVE ========== */
+@media (max-width: 992px) {
+    .room-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}
+
 @media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-    }
-
-    .sidebar.show {
-        transform: translateX(0);
-    }
-
-    .main-content {
-        margin-left: 0;
-    }
-
-    .content-area {
-        padding: 16px;
-    }
-
-    .topbar {
-        padding: 0 16px;
-    }
-
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .page-header .btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .month-selector {
-        flex-wrap: wrap;
-    }
-
-    .dash-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .dash-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .room-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .tenant-row-cccd {
-        display: none;
-    }
-
-    .bill-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .bill-card-header .bill-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.show { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .content-area { padding: 16px; }
+    .topbar { padding: 0 16px; }
+    .stat-card h3 { font-size: 1.15rem; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header .btn { width: 100%; justify-content: center; }
+    .month-selector { flex-wrap: wrap; }
+    .room-grid { grid-template-columns: 1fr; }
+    .tenant-row-cccd { display: none; }
+    .bill-card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .bill-card-header .bill-actions { width: 100%; justify-content: space-between; }
+    .dash-stats { grid-template-columns: repeat(2, 1fr); }
+    .dash-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
-    .dash-stats {
-        grid-template-columns: 1fr;
-    }
-
-    .dash-stat-card {
-        padding: 12px 14px;
-    }
-
-    .dash-stat-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 0.95rem;
-    }
-
-    .dash-stat-value {
-        font-size: 1rem;
-    }
-
-    .tenant-row-phone {
-        display: none;
-    }
+    .dash-stats { grid-template-columns: 1fr; }
 }
 
 /* ========== PRINT ========== */
