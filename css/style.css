@@ -117,9 +117,8 @@ body {
 /* ========== MAIN ========== */
 .main-content {
     margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
     min-height: 100vh;
-    transition: margin-left 0.3s ease, width 0.3s ease;
+    transition: margin-left 0.3s ease;
 }
 
 .topbar {
@@ -943,7 +942,6 @@ body {
 
     .main-content {
         margin-left: 0;
-        width: 100%;
     }
 
     .content-area {
@@ -1024,7 +1022,7 @@ body {
 /* ========== PRINT ========== */
 @media print {
     .sidebar, .topbar, .bill-actions { display: none !important; }
-    .main-content { margin-left: 0 !important; width: 100% !important; }
+    .main-content { margin-left: 0 !important; }
 }
 
 /* ========== SCROLLBAR ========== */
