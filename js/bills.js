@@ -145,8 +145,29 @@ const Bills = {
                             </div>
                         </div>
 
+                        <div class="section-title">Khấu Trừ</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tiền cọc (đ)</label>
+                                <input type="number" class="form-control" value="${bill.deposit || ''}"
+                                    oninput="Bills.updateField('${room.id}', 'deposit', this.value)" placeholder="0">
+                                <small class="text-muted" style="font-size:0.7rem">Nhập số dương nếu khách đã cọc</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phí mua đồ (đ)</label>
+                                <input type="number" class="form-control" value="${bill.purchases || ''}"
+                                    oninput="Bills.updateField('${room.id}', 'purchases', this.value)" placeholder="0">
+                                <small class="text-muted" style="font-size:0.7rem">Tiền khách mua đồ, trừ vào tổng</small>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-between align-items-center pt-3" style="border-top: 1px solid var(--border)">
-                            <h5 class="mb-0" style="color: var(--primary)">Tổng: <strong class="bill-total">${Utils.formatCurrency(total)}</strong></h5>
+                            <div>
+                                <h5 class="mb-0" style="color: var(--primary)">Tổng: <strong class="bill-total">${Utils.formatCurrency(total)}</strong></h5>
+                                ${((parseFloat(bill.deposit) || 0) + (parseFloat(bill.purchases) || 0)) > 0 ?
+                                    `<small class="text-muted bill-deduction" style="font-size:0.75rem">Đã trừ: -${Utils.formatCurrency((parseFloat(bill.deposit) || 0) + (parseFloat(bill.purchases) || 0))}</small>` :
+                                    `<small class="text-muted bill-deduction" style="font-size:0.75rem;display:none"></small>`}
+                            </div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-secondary" onclick="Bills.printBill('${room.id}')">
                                     <i class="bi bi-printer"></i> In
@@ -314,6 +335,9 @@ const Bills = {
         total += parseFloat(bill.cleaning) || 0;
         total += parseFloat(bill.other) || 0;
 
+        total -= parseFloat(bill.deposit) || 0;
+        total -= parseFloat(bill.purchases) || 0;
+
         bill.total = total;
     },
 
@@ -354,6 +378,17 @@ const Bills = {
         const totalEl = card.querySelector('.bill-total');
         if (totalEl) {
             totalEl.textContent = Utils.formatCurrency(bill.total);
+        }
+
+        const deductionEl = card.querySelector('.bill-deduction');
+        const totalDeduction = (parseFloat(bill.deposit) || 0) + (parseFloat(bill.purchases) || 0);
+        if (deductionEl) {
+            if (totalDeduction > 0) {
+                deductionEl.textContent = `Đã trừ: -${Utils.formatCurrency(totalDeduction)}`;
+                deductionEl.style.display = '';
+            } else {
+                deductionEl.style.display = 'none';
+            }
         }
     },
 
@@ -519,6 +554,12 @@ const Bills = {
                     <div class="row"><span>Vệ sinh:</span><span>${Utils.formatCurrency(bill.cleaning || 0)}</span></div>
                     <div class="row"><span>Khác:</span><span>${Utils.formatCurrency(bill.other || 0)}</span></div>
                 </div>
+                ${((parseFloat(bill.deposit) || 0) + (parseFloat(bill.purchases) || 0)) > 0 ? `
+                <div class="section">
+                    <div class="section-title">Khấu Trừ</div>
+                    ${bill.deposit ? `<div class="row"><span>Tiền cọc:</span><span>-${Utils.formatCurrency(bill.deposit)}</span></div>` : ''}
+                    ${bill.purchases ? `<div class="row"><span>Phí mua đồ:</span><span>-${Utils.formatCurrency(bill.purchases)}</span></div>` : ''}
+                </div>` : ''}
                 <div class="row total"><span>TỔNG CỘNG:</span><span>${Utils.formatCurrency(bill.total || 0)}</span></div>
                 <script>window.onload = function() { window.print(); }</script>
             </body>
