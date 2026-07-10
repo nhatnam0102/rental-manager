@@ -17,24 +17,19 @@ const Rooms = {
             const roomTenants = tenants.filter(t => t.roomId === room.id);
             const count = roomTenants.length;
 
-            const tenantListHTML = count > 0
-                ? roomTenants.map(t => `
-                    <div class="room-tenant-item">
-                        <div class="room-tenant-avatar">${t.name.charAt(0).toUpperCase()}</div>
-                        <div class="room-tenant-info">
-                            <div class="room-tenant-name">${t.name}</div>
-                            <div class="room-tenant-phone">${t.phone}</div>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger" onclick="Tenants.delete('${t.id}')" title="Xóa">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>`).join('')
-                : '<div class="room-empty-tenants">Chưa có khách thuê</div>';
+            const peopleHTML = count > 0
+                ? `<div class="room-card-people">
+                    ${roomTenants.map(t => `
+                        <span class="room-person-tag">
+                            <i class="bi bi-person-fill"></i>${t.name}
+                        </span>`).join('')}
+                   </div>`
+                : '<div class="room-empty">Chưa có khách thuê</div>';
 
             return `
                 <div class="room-card">
-                    <div class="room-card-header">
-                        <div class="room-card-title">
+                    <div class="room-card-top">
+                        <div class="room-card-left">
                             <div class="room-card-icon">${room.name.substring(0, 3)}</div>
                             <div>
                                 <div class="room-card-name">${room.name}</div>
@@ -45,12 +40,10 @@ const Rooms = {
                             ${count > 0 ? `${count} người` : 'Trống'}
                         </span>
                     </div>
-                    <div class="room-card-body">
-                        ${tenantListHTML}
-                    </div>
-                    <div class="room-card-footer">
+                    ${peopleHTML}
+                    <div class="room-card-bottom">
                         <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showAddToRoom('${room.id}')">
-                            <i class="bi bi-person-plus"></i> Thêm khách
+                            <i class="bi bi-plus-lg"></i> Thêm khách
                         </button>
                         <div class="room-card-actions">
                             <button class="btn btn-sm btn-outline-secondary" onclick="Rooms.showEdit('${room.id}')">
@@ -104,20 +97,10 @@ const Rooms = {
     save() {
         const name = document.getElementById('roomName').value.trim();
         const note = document.getElementById('roomNote').value.trim();
-
-        if (!name) {
-            alert('Vui lòng nhập tên phòng');
-            return;
-        }
+        if (!name) { alert('Vui lòng nhập tên phòng'); return; }
 
         const rooms = Storage.getRooms();
-        rooms.push({
-            id: Utils.generateId(),
-            name,
-            note,
-            createdAt: Utils.today()
-        });
-
+        rooms.push({ id: Utils.generateId(), name, note, createdAt: Utils.today() });
         Storage.saveRooms(rooms);
         bootstrap.Modal.getInstance(document.getElementById('mainModal')).hide();
         this.render();
@@ -126,16 +109,11 @@ const Rooms = {
     update(id) {
         const name = document.getElementById('roomName').value.trim();
         const note = document.getElementById('roomNote').value.trim();
-
-        if (!name) {
-            alert('Vui lòng nhập tên phòng');
-            return;
-        }
+        if (!name) { alert('Vui lòng nhập tên phòng'); return; }
 
         const rooms = Storage.getRooms();
         const index = rooms.findIndex(r => r.id === id);
         if (index === -1) return;
-
         rooms[index].name = name;
         rooms[index].note = note;
 
@@ -146,7 +124,6 @@ const Rooms = {
 
     delete(id) {
         if (!confirm('Bạn muốn xóa phòng này?')) return;
-
         let rooms = Storage.getRooms();
         rooms = rooms.filter(r => r.id !== id);
         Storage.saveRooms(rooms);
@@ -154,7 +131,6 @@ const Rooms = {
         let tenants = Storage.getTenants();
         tenants = tenants.filter(t => t.roomId !== id);
         Storage.saveTenants(tenants);
-
         this.render();
     },
 
