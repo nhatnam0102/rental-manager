@@ -52,7 +52,7 @@ const Storage = {
         return this.get(this.KEYS.SETTINGS) || {
             electricPrice: 4000,
             waterPrice: 100000,
-            wifiPrice: 100000,
+            wifiPricePerPerson: 20000,
             garbagePrice: 15000
         };
     },

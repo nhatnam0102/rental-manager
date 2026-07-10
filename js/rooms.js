@@ -16,15 +16,18 @@ const Rooms = {
         }
 
         tbody.innerHTML = rooms.map(room => {
-            const tenant = tenants.find(t => t.roomId === room.id);
+            const roomTenants = tenants.filter(t => t.roomId === room.id);
+            const count = roomTenants.length;
+            const tenantNames = roomTenants.map(t => t.name).join(', ');
+            const phones = roomTenants.map(t => t.phone).join(', ');
             return `
                 <tr>
                     <td><strong>${room.name}</strong></td>
-                    <td>${tenant ? tenant.name : '<span class="text-muted">Trống</span>'}</td>
-                    <td>${tenant ? tenant.phone : '-'}</td>
+                    <td>${count > 0 ? `${tenantNames} <span class="text-muted" style="font-size:0.8rem">(${count} người)</span>` : '<span class="text-muted">Trống</span>'}</td>
+                    <td>${count > 0 ? phones : '-'}</td>
                     <td>
-                        <span class="badge ${tenant ? 'badge-occupied' : 'badge-available'}">
-                            ${tenant ? 'Đang thuê' : 'Trống'}
+                        <span class="badge ${count > 0 ? 'badge-occupied' : 'badge-available'}">
+                            ${count > 0 ? `${count} người` : 'Trống'}
                         </span>
                     </td>
                     <td class="text-end">

@@ -39,14 +39,13 @@ const Tenants = {
     getRoomOptions(selectedId) {
         const rooms = Storage.getRooms();
         const tenants = Storage.getTenants();
-        const occupiedRoomIds = tenants.filter(t => t.roomId).map(t => t.roomId);
 
         let options = '<option value="">-- Chọn phòng --</option>';
         rooms.forEach(room => {
-            const isOccupied = occupiedRoomIds.includes(room.id);
+            const count = tenants.filter(t => t.roomId === room.id).length;
             const isSelected = room.id === selectedId ? 'selected' : '';
-            const disabled = isOccupied && room.id !== selectedId ? 'disabled' : '';
-            options += `<option value="${room.id}" ${isSelected} ${disabled}>${room.name} ${isOccupied && room.id !== selectedId ? '(đã có khách)' : ''}</option>`;
+            const suffix = count > 0 ? ` (${count} người)` : '';
+            options += `<option value="${room.id}" ${isSelected}>${room.name}${suffix}</option>`;
         });
         return options;
     },
@@ -177,5 +176,15 @@ const Tenants = {
     getTenantByRoom(roomId) {
         const tenants = Storage.getTenants();
         return tenants.find(t => t.roomId === roomId);
+    },
+
+    getTenantsByRoom(roomId) {
+        const tenants = Storage.getTenants();
+        return tenants.filter(t => t.roomId === roomId);
+    },
+
+    getTenantCount(roomId) {
+        const tenants = Storage.getTenants();
+        return tenants.filter(t => t.roomId === roomId).length;
     }
 };

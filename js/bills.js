@@ -67,20 +67,41 @@ const Bills = {
                         </div>
                         <div class="electric-info text-muted mb-3" style="font-size:0.85rem;${bill.electricKwh ? '' : 'display:none'}">${bill.electricKwh ? `${bill.electricKwh} kWh × ${Utils.formatNumber(settings.electricPrice)} = ${Utils.formatCurrency(bill.electricTotal || 0)}` : ''}</div>
 
-                        <div class="section-title">Nước, WiFi, Rác</div>
+                        <div class="section-title">Nước</div>
                         <div class="row g-3 mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Nước (m³)</label>
-                                <input type="number" class="form-control" value="${bill.waterM3 || ''}"
-                                    oninput="Bills.updateField('${room.id}', 'waterM3', this.value)" placeholder="0">
-                                <small class="water-info text-muted"${bill.waterTotal ? '' : ' style="display:none"'}>${bill.waterTotal ? `= ${Utils.formatCurrency(bill.waterTotal)}` : ''}</small>
+                            <div class="col-md-3">
+                                <label class="form-label">Nước đầu</label>
+                                <input type="number" class="form-control" value="${bill.waterStart || ''}"
+                                    oninput="Bills.updateField('${room.id}', 'waterStart', this.value)">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">WiFi (đ)</label>
-                                <input type="number" class="form-control" value="${bill.wifi || settings.wifiPrice}"
-                                    oninput="Bills.updateField('${room.id}', 'wifi', this.value)">
+                            <div class="col-md-3">
+                                <label class="form-label">Nước cuối</label>
+                                <input type="number" class="form-control" value="${bill.waterEnd || ''}"
+                                    oninput="Bills.updateField('${room.id}', 'waterEnd', this.value)"
+                                    onblur="Bills.onWaterEndBlur('${room.id}', this.value)">
+                                <small class="text-muted" style="font-size:0.7rem">Tự điền nước đầu tháng sau</small>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Tiêu thụ</label>
+                                <input type="text" class="form-control" value="${bill.waterM3 || '0'}" readonly
+                                    style="background:#f1f5f9; font-weight:600">
+                                <small class="text-muted" style="font-size:0.7rem">m³ (cuối - đầu)</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Thành tiền</label>
+                                <div class="water-info" style="padding:6px 0;font-weight:600;color:var(--primary)">${bill.waterTotal ? Utils.formatCurrency(bill.waterTotal) : '0 đ'}</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">WiFi & Rác</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">WiFi</label>
+                                <div class="wifi-info" style="padding:6px 0;font-weight:500">
+                                    ${this.renderWifiInfo(room.id, settings)}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">Rác (đ)</label>
                                 <input type="number" class="form-control" value="${bill.garbage || settings.garbagePrice}"
                                     oninput="Bills.updateField('${room.id}', 'garbage', this.value)">
@@ -157,7 +178,7 @@ const Bills = {
         const numValue = parseFloat(value) || 0;
         bills[key][roomId][field] = numValue;
 
-        this.calculateTotal(bills[key][roomId]);
+        this.calculateTotal(bills[key][roomId], roomId);
         Storage.saveBills(bills);
         this.updateRealtime(roomId, bills[key][roomId]);
     },
@@ -193,6 +214,45 @@ const Bills = {
         }
     },
 
+    renderWifiInfo(roomId, settings) {
+        const count = Tenants.getTenantCount(roomId);
+        const pricePerPerson = settings.wifiPricePerPerson || 20000;
+        const total = count * pricePerPerson;
+        if (count === 0) return `<span class="text-muted" style="font-size:0.85rem">Chưa có khách (${Utils.formatCurrency(pricePerPerson)}/người)</span>`;
+        return `${count} người × ${Utils.formatCurrency(pricePerPerson)} = <strong style="color:var(--primary)">${Utils.formatCurrency(total)}</strong>`;
+    },
+
+    onWaterEndBlur(roomId, value) {
+        const month = parseInt(document.getElementById('selectMonth').value);
+        const year = parseInt(document.getElementById('selectYear').value);
+        const numValue = parseFloat(value) || 0;
+
+        if (numValue > 0) {
+            const bills = Storage.getBills();
+            this.autoFillNextMonthWater(roomId, numValue, month, year, bills);
+            Storage.saveBills(bills);
+        }
+    },
+
+    autoFillNextMonthWater(roomId, waterEnd, currentMonth, currentYear, bills) {
+        let nextMonth = currentMonth + 1;
+        let nextYear = currentYear;
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
+        }
+
+        const nextKey = Utils.getKey(nextMonth, nextYear);
+        if (!bills[nextKey]) bills[nextKey] = {};
+        if (!bills[nextKey][roomId]) bills[nextKey][roomId] = {};
+
+        const nextBill = bills[nextKey][roomId];
+        if (!nextBill.waterStart || nextBill.waterStart === 0) {
+            nextBill.waterStart = waterEnd;
+            this.showToast(`Tự điền nước đầu ${Utils.getMonthName(nextMonth)} ${nextYear}: ${Utils.formatNumber(waterEnd)}`);
+        }
+    },
+
     showToast(message) {
         const existing = document.querySelector('.toast-msg');
         if (existing) existing.remove();
@@ -209,7 +269,7 @@ const Bills = {
         }, 3000);
     },
 
-    calculateTotal(bill) {
+    calculateTotal(bill, roomId) {
         const settings = Storage.getSettings();
         let total = 0;
 
@@ -224,10 +284,18 @@ const Bills = {
             bill.electricTotal = 0;
         }
 
-        bill.waterTotal = Utils.calculateWaterBill(parseFloat(bill.waterM3) || 0, settings.waterPrice);
+        if (bill.waterStart !== undefined && bill.waterEnd !== undefined) {
+            bill.waterM3 = Math.max(0, (parseFloat(bill.waterEnd) || 0) - (parseFloat(bill.waterStart) || 0));
+        } else {
+            bill.waterM3 = parseFloat(bill.waterM3) || 0;
+        }
+        bill.waterTotal = Utils.calculateWaterBill(bill.waterM3, settings.waterPrice);
         total += bill.waterTotal;
 
-        total += parseFloat(bill.wifi) || settings.wifiPrice;
+        const tenantCount = roomId ? Tenants.getTenantCount(roomId) : 0;
+        bill.wifi = tenantCount * (settings.wifiPricePerPerson || 20000);
+        total += bill.wifi;
+
         total += parseFloat(bill.garbage) || settings.garbagePrice;
         total += parseFloat(bill.parking) || 0;
         total += parseFloat(bill.cleaning) || 0;
@@ -258,12 +326,17 @@ const Bills = {
 
         const waterInfo = card.querySelector('.water-info');
         if (waterInfo) {
-            if (bill.waterTotal) {
-                waterInfo.textContent = `= ${Utils.formatCurrency(bill.waterTotal)}`;
-                waterInfo.style.display = '';
-            } else {
-                waterInfo.style.display = 'none';
-            }
+            waterInfo.textContent = bill.waterTotal ? Utils.formatCurrency(bill.waterTotal) : '0 đ';
+        }
+
+        const waterM3Input = card.querySelector('input[readonly]');
+        if (waterM3Input && bill.waterM3 !== undefined) {
+            waterM3Input.value = bill.waterM3;
+        }
+
+        const wifiInfo = card.querySelector('.wifi-info');
+        if (wifiInfo) {
+            wifiInfo.innerHTML = this.renderWifiInfo(roomId, settings);
         }
 
         const totalEl = card.querySelector('.bill-total');
@@ -299,7 +372,7 @@ const Bills = {
 
             rooms.forEach(room => {
                 const bill = monthBills[room.id];
-                if (bill && (bill.electricStart || bill.electricEnd || bill.roomFee || bill.waterM3 || bill.total)) {
+                if (bill && (bill.electricStart || bill.electricEnd || bill.roomFee || bill.waterStart || bill.waterEnd || bill.waterM3 || bill.total)) {
                     hasData = true;
                     if (bill.total) {
                         totalRevenue += bill.total;
@@ -385,7 +458,9 @@ const Bills = {
         const bills = Storage.getBills();
         const bill = bills[key]?.[roomId] || {};
         const roomName = Rooms.getRoomName(roomId);
-        const electricPrice = Storage.getSettings().electricPrice;
+        const settings = Storage.getSettings();
+        const tenantCount = Tenants.getTenantCount(roomId);
+        const wifiTotal = tenantCount * (settings.wifiPricePerPerson || 20000);
 
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
@@ -408,12 +483,17 @@ const Bills = {
                 <div class="section">
                     <div class="section-title">Phòng & Điện</div>
                     <div class="row"><span>Tiền phòng:</span><span>${Utils.formatCurrency(bill.roomFee || 0)}</span></div>
-                    <div class="row"><span>Điện (${bill.electricKwh || 0} kWh × ${Utils.formatNumber(electricPrice)}):</span><span>${Utils.formatCurrency(bill.electricTotal || 0)}</span></div>
+                    <div class="row"><span>Điện (${bill.electricKwh || 0} kWh × ${Utils.formatNumber(settings.electricPrice)}):</span><span>${Utils.formatCurrency(bill.electricTotal || 0)}</span></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">Nước</div>
+                    <div class="row"><span>Số đầu:</span><span>${bill.waterStart || 0}</span></div>
+                    <div class="row"><span>Số cuối:</span><span>${bill.waterEnd || 0}</span></div>
+                    <div class="row"><span>Tiêu thụ (${bill.waterM3 || 0} m³ × ${Utils.formatNumber(settings.waterPrice)}):</span><span>${Utils.formatCurrency(bill.waterTotal || 0)}</span></div>
                 </div>
                 <div class="section">
                     <div class="section-title">Dịch Vụ</div>
-                    <div class="row"><span>Nước (${bill.waterM3 || 0} m³):</span><span>${Utils.formatCurrency(bill.waterTotal || 0)}</span></div>
-                    <div class="row"><span>WiFi:</span><span>${Utils.formatCurrency(bill.wifi || 0)}</span></div>
+                    <div class="row"><span>WiFi (${tenantCount} người × ${Utils.formatNumber(settings.wifiPricePerPerson || 20000)}):</span><span>${Utils.formatCurrency(wifiTotal)}</span></div>
                     <div class="row"><span>Rác:</span><span>${Utils.formatCurrency(bill.garbage || 0)}</span></div>
                 </div>
                 <div class="section">
