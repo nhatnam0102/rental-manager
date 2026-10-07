@@ -11,6 +11,7 @@ const Dashboard = {
         const tenants = Storage.getTenants();
 
         let totalRevenue = 0;
+        let totalElectric = 0;
         let paidCount = 0;
         let unpaidCount = 0;
 
@@ -18,6 +19,7 @@ const Dashboard = {
             const bill = monthBills[room.id];
             if (bill && bill.total) {
                 totalRevenue += bill.total;
+                totalElectric += bill.electricTotal || 0;
                 if (bill.paid) {
                     paidCount++;
                 } else {
@@ -27,6 +29,7 @@ const Dashboard = {
         });
 
         document.getElementById('stat-revenue').textContent = Utils.formatCurrency(totalRevenue);
+        document.getElementById('stat-electric').textContent = Utils.formatCurrency(totalElectric);
         document.getElementById('stat-paid').textContent = `${paidCount} phòng`;
         document.getElementById('stat-unpaid').textContent = `${unpaidCount} phòng`;
         document.getElementById('stat-total').textContent = `${rooms.length} phòng`;

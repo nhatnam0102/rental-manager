@@ -12,6 +12,8 @@ const Bills = {
 
         document.getElementById('billMonth').textContent = `${Utils.getMonthName(month)} ${year}`;
 
+        this.renderElectricSummary();
+
         if (rooms.length === 0) {
             document.getElementById('billsList').innerHTML = `
                 <div class="empty-state">
@@ -183,6 +185,78 @@ const Bills = {
         }).join('');
 
         this.renderMonthList();
+    },
+
+    renderElectricSummary() {
+        const container = document.getElementById('electricSummary');
+        if (!container) return;
+
+        const month = parseInt(document.getElementById('selectMonth').value);
+        const year = parseInt(document.getElementById('selectYear').value);
+        const key = Utils.getKey(month, year);
+        const monthBills = Storage.getBills()[key] || {};
+        const rooms = Storage.getRooms();
+        const settings = Storage.getSettings();
+
+        if (rooms.length === 0) {
+            container.innerHTML = `
+                <div class="electric-summary-icon"><i class="bi bi-lightning-charge"></i></div>
+                <div class="electric-summary-main">
+                    <span class="electric-summary-label">Tổng tiền điện tất cả phòng</span>
+                    <span class="electric-summary-total">0 đ</span>
+                </div>
+                <span class="electric-summary-empty">Chưa có phòng nào</span>`;
+            return;
+        }
+
+        let totalKwh = 0;
+        let totalAmount = 0;
+        let enteredCount = 0;
+        let paidAmount = 0;
+
+        rooms.forEach(room => {
+            const bill = monthBills[room.id];
+            if (!bill) return;
+
+            if ((parseFloat(bill.electricEnd) || 0) > 0) enteredCount++;
+
+            let kwh = parseFloat(bill.electricKwh) || 0;
+            let amount = parseFloat(bill.electricTotal) || 0;
+
+            if (!kwh && !amount && bill.electricStart !== undefined && bill.electricEnd !== undefined) {
+                kwh = Math.max(0, (parseFloat(bill.electricEnd) || 0) - (parseFloat(bill.electricStart) || 0));
+                amount = Utils.calculateElectricBill(kwh, settings.electricPrice);
+            }
+
+            totalKwh += kwh;
+            totalAmount += amount;
+            if (bill.paid) paidAmount += amount;
+        });
+
+        container.innerHTML = `
+            <div class="electric-summary-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="electric-summary-main">
+                <span class="electric-summary-label">Tổng tiền điện tất cả phòng · ${Utils.getMonthName(month)} ${year}</span>
+                <span class="electric-summary-total">${Utils.formatCurrency(totalAmount)}</span>
+            </div>
+            <div class="electric-summary-items">
+                <div class="electric-summary-item">
+                    <span class="electric-summary-label">Tổng tiêu thụ</span>
+                    <span class="electric-summary-value">${Utils.formatNumber(totalKwh)} kWh</span>
+                </div>
+                <div class="electric-summary-item">
+                    <span class="electric-summary-label">Giá điện</span>
+                    <span class="electric-summary-value">${Utils.formatNumber(settings.electricPrice || 0)} đ/kWh</span>
+                </div>
+                <div class="electric-summary-item">
+                    <span class="electric-summary-label">Phòng đã nhập chỉ số</span>
+                    <span class="electric-summary-value">${enteredCount}/${rooms.length}</span>
+                </div>
+                <div class="electric-summary-item">
+                    <span class="electric-summary-label">Tiền điện đã đóng</span>
+                    <span class="electric-summary-value electric-summary-paid">${Utils.formatCurrency(paidAmount)}</span>
+                </div>
+            </div>`;
     },
 
     toggle(roomId) {
@@ -390,6 +464,8 @@ const Bills = {
                 deductionEl.style.display = 'none';
             }
         }
+
+        this.renderElectricSummary();
     },
 
     renderMonthList() {
