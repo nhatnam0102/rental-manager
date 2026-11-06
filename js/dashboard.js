@@ -5,7 +5,7 @@ const Dashboard = {
         const month = parseInt(document.getElementById('selectMonth').value);
         const year = parseInt(document.getElementById('selectYear').value);
         const key = Utils.getKey(month, year);
-        const bills = Storage.getBills();
+        const bills = Bills.syncAll();
         const monthBills = bills[key] || {};
         const rooms = Storage.getRooms();
         const tenants = Storage.getTenants();
@@ -17,7 +17,7 @@ const Dashboard = {
 
         rooms.forEach(room => {
             const bill = monthBills[room.id];
-            if (bill && bill.total) {
+            if (Bills.isEntered(bill)) {
                 totalRevenue += bill.total;
                 totalElectric += bill.electricTotal || 0;
                 if (bill.paid) {
@@ -41,13 +41,13 @@ const Dashboard = {
         }
 
         this.renderUnpaidList(monthBills, rooms);
-        this.renderChart(bills, year, month);
+        this.renderChart(bills, rooms, year, month);
     },
 
     renderUnpaidList(monthBills, rooms) {
         const unpaidRooms = rooms.filter(room => {
             const bill = monthBills[room.id];
-            return bill && bill.total && !bill.paid;
+            return Bills.isEntered(bill) && !bill.paid;
         });
 
         const container = document.getElementById('unpaidList');
@@ -65,13 +65,13 @@ const Dashboard = {
 
         container.innerHTML = unpaidRooms.map(room => {
             const bill = monthBills[room.id];
-            const tenantCount = Tenants.getTenantCount(room.id);
+            const tenantCount = bill.people ?? Tenants.getTenantCount(room.id);
             return `
                 <div class="dash-unpaid-item">
                     <div class="dash-unpaid-left">
-                        <div class="dash-unpaid-icon">${room.name.substring(0, 2)}</div>
+                        <div class="dash-unpaid-icon">${Utils.esc(room.name.substring(0, 2))}</div>
                         <div class="dash-unpaid-info">
-                            <span class="dash-unpaid-name">${room.name}</span>
+                            <span class="dash-unpaid-name">${Utils.esc(room.name)}</span>
                             <span class="dash-unpaid-detail">${Utils.formatCurrency(bill.total)}${tenantCount > 0 ? ` · ${tenantCount} người` : ''}</span>
                         </div>
                     </div>
@@ -82,7 +82,7 @@ const Dashboard = {
         }).join('');
     },
 
-    renderChart(bills, currentYear, currentMonth) {
+    renderChart(bills, rooms, currentYear, currentMonth) {
         const labels = [];
         const data = [];
 
@@ -96,8 +96,10 @@ const Dashboard = {
             const key = Utils.getKey(m, y);
             const monthBills = bills[key] || {};
             let total = 0;
-            Object.values(monthBills).forEach(bill => {
-                total += bill.total || 0;
+            // Chỉ cộng phòng còn tồn tại, cùng cách tính với thẻ Doanh thu.
+            rooms.forEach(room => {
+                const bill = monthBills[room.id];
+                if (Bills.isEntered(bill)) total += bill.total;
             });
             data.push(total);
         }

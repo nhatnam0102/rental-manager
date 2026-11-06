@@ -29,8 +29,8 @@ const Tenants = {
                 <div class="tenant-group">
                     <div class="tenant-group-header">
                         <div class="tenant-group-title">
-                            <div class="room-mini-icon">${room.name.substring(0, 3)}</div>
-                            ${room.name}
+                            <div class="room-mini-icon">${Utils.esc(room.name.substring(0, 3))}</div>
+                            ${Utils.esc(room.name)}
                             <span class="badge badge-occupied" style="margin-left:4px">${list.length}</span>
                         </div>
                         <button class="btn btn-sm btn-outline-primary" onclick="Tenants.showAddToRoom('${room.id}')">
@@ -39,10 +39,10 @@ const Tenants = {
                     </div>
                     ${list.map(t => `
                         <div class="tenant-row">
-                            <div class="tenant-row-name">${t.name}</div>
-                            <div class="tenant-row-phone">${t.phone}</div>
-                            <div class="tenant-row-cccd">${t.cccd || '-'}</div>
-                            <div class="tenant-row-date">${t.moveInDate || '-'}</div>
+                            <div class="tenant-row-name">${Utils.esc(t.name)}</div>
+                            <div class="tenant-row-phone">${Utils.esc(t.phone)}</div>
+                            <div class="tenant-row-cccd">${Utils.esc(t.cccd || '-')}</div>
+                            <div class="tenant-row-date">${Utils.esc(t.moveInDate || '-')}</div>
                             <div class="tenant-row-actions">
                                 <button class="btn btn-sm btn-outline-secondary" onclick="Tenants.showEdit('${t.id}')">
                                     <i class="bi bi-pencil"></i>
@@ -68,10 +68,10 @@ const Tenants = {
                     </div>
                     ${unassigned.map(t => `
                         <div class="tenant-row">
-                            <div class="tenant-row-name">${t.name}</div>
-                            <div class="tenant-row-phone">${t.phone}</div>
-                            <div class="tenant-row-cccd">${t.cccd || '-'}</div>
-                            <div class="tenant-row-date">${t.moveInDate || '-'}</div>
+                            <div class="tenant-row-name">${Utils.esc(t.name)}</div>
+                            <div class="tenant-row-phone">${Utils.esc(t.phone)}</div>
+                            <div class="tenant-row-cccd">${Utils.esc(t.cccd || '-')}</div>
+                            <div class="tenant-row-date">${Utils.esc(t.moveInDate || '-')}</div>
                             <div class="tenant-row-actions">
                                 <button class="btn btn-sm btn-outline-secondary" onclick="Tenants.showEdit('${t.id}')">
                                     <i class="bi bi-pencil"></i>
@@ -96,7 +96,7 @@ const Tenants = {
             const count = tenants.filter(t => t.roomId === room.id).length;
             const suffix = count > 0 ? ` (${count})` : '';
             const selected = room.id === selectedId ? 'selected' : '';
-            options += `<option value="${room.id}" ${selected}>${room.name}${suffix}</option>`;
+            options += `<option value="${room.id}" ${selected}>${Utils.esc(room.name)}${suffix}</option>`;
         });
         return options;
     },
@@ -164,15 +164,15 @@ const Tenants = {
         document.getElementById('modalBody').innerHTML = `
             <div class="mb-3">
                 <label class="form-label">Họ Tên</label>
-                <input type="text" class="form-control" id="tenantName" value="${tenant.name}">
+                <input type="text" class="form-control" id="tenantName" value="${Utils.esc(tenant.name)}">
             </div>
             <div class="mb-3">
                 <label class="form-label">Số Điện Thoại</label>
-                <input type="tel" class="form-control" id="tenantPhone" value="${tenant.phone}">
+                <input type="tel" class="form-control" id="tenantPhone" value="${Utils.esc(tenant.phone)}">
             </div>
             <div class="mb-3">
                 <label class="form-label">CCCD</label>
-                <input type="text" class="form-control" id="tenantCCCD" value="${tenant.cccd || ''}">
+                <input type="text" class="form-control" id="tenantCCCD" value="${Utils.esc(tenant.cccd)}">
             </div>
             <div class="mb-3">
                 <label class="form-label">Phòng</label>
@@ -199,6 +199,7 @@ const Tenants = {
         tenants.push({ id: Utils.generateId(), name, phone, cccd, roomId, moveInDate, createdAt: Utils.today() });
         Storage.saveTenants(tenants);
         bootstrap.Modal.getInstance(document.getElementById('mainModal')).hide();
+        Bills.syncAll();
         this.render();
         Rooms.render();
     },
@@ -218,6 +219,7 @@ const Tenants = {
         tenants[index] = { ...tenants[index], name, phone, cccd, roomId, moveInDate };
         Storage.saveTenants(tenants);
         bootstrap.Modal.getInstance(document.getElementById('mainModal')).hide();
+        Bills.syncAll();
         this.render();
         Rooms.render();
     },
@@ -227,6 +229,7 @@ const Tenants = {
         let tenants = Storage.getTenants();
         tenants = tenants.filter(t => t.id !== id);
         Storage.saveTenants(tenants);
+        Bills.syncAll();
         this.render();
         Rooms.render();
     },

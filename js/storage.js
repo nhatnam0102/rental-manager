@@ -49,11 +49,12 @@ const Storage = {
     },
 
     getSettings() {
-        return this.get(this.KEYS.SETTINGS) || {
+        return {
             electricPrice: 4000,
             waterPrice: 100000,
             wifiPricePerPerson: 20000,
-            garbagePrice: 15000
+            garbagePrice: 15000,
+            ...(this.get(this.KEYS.SETTINGS) || {})
         };
     },
 

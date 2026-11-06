@@ -32,7 +32,19 @@ const Utils = {
         return m3 * pricePerM3;
     },
 
+    // Lấy ngày theo giờ máy (VN), không dùng toISOString vì đó là giờ UTC: trước 7h sáng sẽ lùi 1 ngày.
     today() {
-        return new Date().toISOString().split('T')[0];
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    currentKey() {
+        const d = new Date();
+        return this.getKey(d.getMonth() + 1, d.getFullYear());
+    },
+
+    // Tên phòng/khách chèn vào HTML phải qua đây, nếu không dấu < " ' sẽ làm vỡ giao diện.
+    esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 };

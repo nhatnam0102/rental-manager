@@ -21,7 +21,7 @@ const Rooms = {
                 ? `<div class="room-card-people">
                     ${roomTenants.map(t => `
                         <span class="room-person-tag">
-                            <i class="bi bi-person-fill"></i>${t.name}
+                            <i class="bi bi-person-fill"></i>${Utils.esc(t.name)}
                         </span>`).join('')}
                    </div>`
                 : '<div class="room-empty">Chưa có khách thuê</div>';
@@ -30,10 +30,10 @@ const Rooms = {
                 <div class="room-card">
                     <div class="room-card-top">
                         <div class="room-card-left">
-                            <div class="room-card-icon">${room.name.substring(0, 3)}</div>
+                            <div class="room-card-icon">${Utils.esc(room.name.substring(0, 3))}</div>
                             <div>
-                                <div class="room-card-name">${room.name}</div>
-                                ${room.note ? `<div class="room-card-note">${room.note}</div>` : ''}
+                                <div class="room-card-name">${Utils.esc(room.name)}</div>
+                                ${room.note ? `<div class="room-card-note">${Utils.esc(room.note)}</div>` : ''}
                             </div>
                         </div>
                         <span class="badge ${count > 0 ? 'badge-occupied' : 'badge-available'}">
@@ -83,11 +83,11 @@ const Rooms = {
         document.getElementById('modalBody').innerHTML = `
             <div class="mb-3">
                 <label class="form-label">Tên Phòng</label>
-                <input type="text" class="form-control" id="roomName" value="${room.name}">
+                <input type="text" class="form-control" id="roomName" value="${Utils.esc(room.name)}">
             </div>
             <div class="mb-3">
                 <label class="form-label">Ghi Chú</label>
-                <input type="text" class="form-control" id="roomNote" value="${room.note || ''}">
+                <input type="text" class="form-control" id="roomNote" value="${Utils.esc(room.note)}">
             </div>`;
 
         document.getElementById('modalSave').onclick = () => this.update(id);
@@ -131,6 +131,11 @@ const Rooms = {
         let tenants = Storage.getTenants();
         tenants = tenants.filter(t => t.roomId !== id);
         Storage.saveTenants(tenants);
+
+        // Xoá luôn hoá đơn của phòng, nếu không biểu đồ doanh thu vẫn cộng phòng đã xoá.
+        const bills = Storage.getBills();
+        Object.values(bills).forEach(monthBills => delete monthBills[id]);
+        Storage.saveBills(bills);
         this.render();
     },
 
